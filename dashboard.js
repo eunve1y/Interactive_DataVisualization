@@ -75,45 +75,31 @@
     if (!marker) marker = L.marker([lat, lon]).addTo(map);
     else marker.setLatLng([lat, lon]);
 
-    const currencyCode = currencyMap[code];
-    if (!currencyCode) {
+    // 5-2) 통화코드 매핑
+    const currency = currencyMap[code];
+    if (!currency) {
       alert("지원하지 않는 국가입니다.");
       return;
     }
 
-    // --- 환율 타임시리즈 (수정 후) ---
+    // --- 환율 시계열 (Frankfurter.app, 무료) ---
     try {
       const end = new Date(),
         start = new Date(end - 29 * 24 * 3600 * 1000),
         fmt = (d) => d.toISOString().slice(0, 10);
-      const tsUrl =
-        `https://api.exchangerate.host/timeseries` +
-        `?start_date=${fmt(start)}&end_date=${fmt(end)}` +
-        `&base=USD&symbols=${currencyCode}`;
-      console.log("환율 타임시리즈 호출 URL: ", tsUrl);
+      const tsUrl = `https://api.frankfurter.app/${fmt(start)}..${fmt(end)}?from=USD&to=${currency}`;
+      console.log("Frankfurter timeseries URL:", tsUrl);
 
-      // 환율 시계열
-      const tsJson = await fetch(tsUrl).then((r) => r.json());
-      if (!tsJson.success || !tsJson.rates)
-        throw new Error("Timeseries API 응답 오류");
-
-      console.log("환율 타임시리즈 호출 URL: ", tsUrl);
-
-      try {
-        const tsJson = await fetch(tsUrl).then((r) => r.json());
-        if (!tsJson.success || !tsJson.rates) {
-          throw new Error("환율 타임시리즈 API 응답 오류");
-        }
-      } catch (err) {
-        console.error(err);
-        alert("환율 시계열 로드 실패");
-      }
+      const tsRes = await fetch(tsUrl);
+      if (!tsRes.ok) throw new Error("Timeseries API 응답 오류");
+      const tsJson = await tsRes.json();
+      // tsJson.rates = { "2025-05-01": { KRW: 1305 }, ... }
       const entries = Object.entries(tsJson.rates)
-        .map(([date, vals]) => ({ date, rate: vals[currencyCode] }))
+        .map(([date, obj]) => ({ date, rate: obj[currency] }))
         .sort((a, b) => new Date(a.date) - new Date(b.date));
 
       rateChart.data.labels = entries.map((d) => d.date);
-      rateChart.data.datasets[0].label = `USD → ${currencyCode}`;
+      rateChart.data.datasets[0].label = `USD → ${currency}`;
       rateChart.data.datasets[0].data = entries.map((d) => d.rate);
       rateChart.update();
     } catch (err) {
@@ -121,63 +107,57 @@
       alert("환율 시계열 로드 실패");
     }
 
-    // 5-3) 현재 환율
+    // --- 최신 환율 ---
+    let curRate = null;
     try {
-      const curJson = await fetch(
-        `https://api.exchangerate.host/latest?base=USD&symbols=${currencyCode}`
-      ).then((r) => r.json());
-      const curRate = curJson.rates[currencyCode];
-      document.getElementById(
-        "countryInfo"
-      ).innerHTML = `<li>환율: USD → ${currencyCode} = ${curRate.toFixed(
-        2
-      )}</li>`;
-    } catch {
-      document.getElementById(
-        "countryInfo"
-      ).innerHTML = `<li>현재 환율 로드 실패</li>`;
+      const curUrl = `https://api.frankfurter.app/latest?from=USD&to=${currency}`;
+      console.log("Frankfurter latest URL:", curUrl);
+
+      const curRes = await fetch(curUrl);
+      if (!curRes.ok) throw new Error("Latest API 응답 오류");
+      const curJson = await curRes.json();
+      curRate = curJson.rates[currency];
+    } catch (e) {
+      console.error("현재 환율 로드 실패", e);
     }
 
-    // 5-4) Open-Meteo 날씨 (무료)
-    const wUrl =
-      `https://api.open-meteo.com/v1/forecast` +
-      `?latitude=${lat}&longitude=${lon}` +
-      `&current_weather=true&timezone=Asia/Seoul`;
-    const wj = await fetch(wUrl).then((r) => r.json());
-    const cw = wj.current_weather;
-    // 날씨코드 맵핑 (필수는 아닙니다)
-    const weatherMap = {
-      0: "맑음",
-      1: "주로 맑음",
-      2: "구름 조금",
-      3: "흐림",
-      45: "안개",
-      48: "착빙 안개",
-      51: "가벼운 이슬비",
-      53: "중간 이슬비",
-      55: "강한 이슬비",
-      61: "약한 비",
-      63: "중간 비",
-      65: "강한 비",
-      71: "약한 눈",
-      73: "중간 눈",
-      75: "강한 눈",
-      80: "약한 소나기",
-      81: "중간 소나기",
-      82: "강한 소나기",
-    };
-    const desc = weatherMap[cw.weathercode] || "알 수 없음";
+    // --- Open-Meteo 날씨 (무료) ---
+    let weatherText = "날씨 로드 실패";
+    try {
+      const wUrl =
+        `https://api.open-meteo.com/v1/forecast` +
+        `?latitude=${lat}&longitude=${lon}` +
+        `&current_weather=true&timezone=Asia/Seoul`;
+      console.log("Open-Meteo URL:", wUrl);
 
-    // 5-5) DOM 업데이트
-    document.getElementById(
-      "weatherInfo"
-    ).textContent = `${desc}, ${cw.temperature}°C, 풍속 ${cw.windspeed} m/s`;
+      const wj = await fetch(wUrl).then((r) => r.json());
+      const cw = wj.current_weather;
+      const weatherMap = {
+        0: "맑음", 1: "주로 맑음", 2: "구름 조금", 3: "흐림",
+        45: "안개", 48: "착빙 안개", 51: "가벼운 이슬비",
+        53: "중간 이슬비", 55: "강한 이슬비", 61: "약한 비",
+        63: "중간 비", 65: "강한 비", 71: "약한 눈",
+        73: "중간 눈", 75: "강한 눈", 80: "약한 소나기",
+        81: "중간 소나기", 82: "강한 소나기"
+      };
+      const desc = weatherMap[cw.weathercode] || "알 수 없음";
+      weatherText = `${desc}, ${cw.temperature}°C, 풍속 ${cw.windspeed} m/s`;
+    } catch (e) {
+      console.error("날씨 로드 실패", e);
+    }
+    document.getElementById("weatherInfo").textContent = weatherText;
 
-    document.getElementById("countryInfo").innerHTML = `
+    // --- 국가 정보 & 환율 렌더링 ---
+    const ci = document.getElementById("countryInfo");
+    ci.innerHTML = `
       <li>수도: ${info.capital[0]}</li>
       <li>인구: ${info.population.toLocaleString()}명</li>
       <li>언어: ${Object.values(info.languages).join(", ")}</li>
-      <li>환율: ${curRate.toFixed(2)}</li>
+      <li>${
+        curRate !== null
+          ? `환율 (USD → ${currency}): ${curRate.toFixed(2)}`
+          : `<span style="color:red">환율 로드 실패</span>`
+      }</li>
     `;
   }
 })();
