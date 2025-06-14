@@ -60,7 +60,7 @@ h1 {
   padding: 1em;
   margin-top: 1em;
   border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 .country-card img.flag {
   width: 48px;
@@ -95,7 +95,7 @@ h1 {
   background: #f0f0f0;
   padding: 10px;
   border-radius: 6px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 .sub-card h2 {
   font-size: 1.1em;
@@ -108,4 +108,33 @@ h1 {
   font-weight: bold;
   padding: 10px 0;
   display: block;
+}
+
+.chart-clock-wrapper {
+  display: flex;
+  gap: 24px;
+  align-items: center;
+  margin-bottom: 16px;
+}
+.chart-container {
+  flex: 1;
+}
+#rateChart {
+  width: 100% !important;
+  height: auto !important;
+}
+
+.clock-wrapper {
+  width: 220px;
+  text-align: center;
+}
+
+#analogClock {
+  display: block;
+  margin: 0 auto 8px;
+}
+
+#timeDiff {
+  font-size: 1em;
+  font-weight: bold;
 }

@@ -80,13 +80,14 @@
     },
   });
 
-  // 전역 변수로 선택한 타임존 저장
   let selectedTimezone = timezoneMap["KR"];
+  let selectedCode = "KR";
 
   select.addEventListener("change", () => onCountrySelect(select.value));
   await onCountrySelect(select.value);
 
   async function onCountrySelect(code) {
+    selectedCode = code;
     selectedTimezone = timezoneMap[code] || "UTC"; // 타임존 설정
 
     const infoRes = await fetch(`https://restcountries.com/v3.1/alpha/${code}`);
@@ -189,16 +190,90 @@
       "업데이트: " + new Date().toLocaleString("ko-KR");
   }
 
-  // 실시간 시간 업데이트 함수 (선택된 타임존 기준)
-  function updateTime() {
-    const now = new Date();
-    const formatted = now.toLocaleString("ko-KR", {
-      timeZone: selectedTimezone,
-      hour12: false,
-    });
-    document.getElementById("currentTime").textContent = formatted;
+  const analogCtx = document.getElementById("analogClock").getContext("2d"); // ▶ 추가된 코드
+
+  function drawAnalogClock(date) {
+    const ctx = analogCtx;
+    const radius = ctx.canvas.width / 2;
+    ctx.resetTransform();
+    ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+    ctx.translate(radius, radius);
+
+    ctx.beginPath();
+    ctx.arc(0, 0, radius - 4, 0, 2 * Math.PI);
+    ctx.fillStyle = "#fff";
+    ctx.fill();
+    ctx.lineWidth = 4;
+    ctx.strokeStyle = "#007ACC";
+    ctx.stroke();
+
+    for (let i = 0; i < 12; i++) {
+      ctx.rotate(Math.PI / 6);
+      ctx.beginPath();
+      ctx.moveTo(0, -radius + 8);
+      ctx.lineTo(0, -radius + 18);
+      ctx.lineWidth = 3;
+      ctx.stroke();
+    }
+
+    const sec = date.getSeconds();
+    const min = date.getMinutes() + sec / 60;
+    const hr = (date.getHours() % 12) + min / 60;
+
+    ctx.save();
+    ctx.rotate((Math.PI / 6) * hr);
+    ctx.lineWidth = 6;
+    ctx.beginPath();
+    ctx.moveTo(0, 8);
+    ctx.lineTo(0, -radius / 2);
+    ctx.stroke();
+    ctx.restore();
+
+    ctx.save();
+    ctx.rotate((Math.PI / 30) * min);
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(0, 12);
+    ctx.lineTo(0, -radius + 30);
+    ctx.stroke();
+    ctx.restore();
+
+    ctx.save();
+    ctx.rotate((Math.PI / 30) * sec);
+    ctx.strokeStyle = "red";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(0, 16);
+    ctx.lineTo(0, -radius + 20);
+    ctx.stroke();
+    ctx.restore();
   }
 
-  setInterval(updateTime, 1000);
-  updateTime();
+  function updateClocks() {
+    const nowUTC = new Date();
+    const countryTime = new Date(
+      nowUTC.toLocaleString("en-US", { timeZone: selectedTimezone })
+    );
+    document.getElementById("currentTime").textContent =
+      countryTime.toLocaleString("ko-KR", {
+        hour12: false,
+        timeZone: selectedTimezone,
+      });
+
+    drawAnalogClock(countryTime);
+
+    const koreaTime = new Date(
+      nowUTC.toLocaleString("en-US", { timeZone: "Asia/Seoul" })
+    );
+    const diffHours = Math.round(
+      (countryTime.getTime() - koreaTime.getTime()) / (1000 * 60 * 60)
+    );
+    const sign = diffHours > 0 ? "+" : "";
+    document.getElementById(
+      "timeDiff"
+    ).textContent = `시차: ${sign}${diffHours}시간`;
+  }
+
+  setInterval(updateClocks, 1000);
+  updateClocks();
 })();

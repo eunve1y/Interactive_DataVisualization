@@ -16,7 +16,17 @@
       </div>
 
       <div id="map"></div>
-      <canvas id="rateChart"></canvas>
+
+      <div class="chart-clock-wrapper">
+        <div class="chart-container">
+          <canvas id="rateChart"></canvas>
+        </div>
+
+        <div class="clock-wrapper">
+          <canvas id="analogClock" width="200" height="200"></canvas>
+          <p id="timeDiff">시차: -- 시간</p>
+        </div>
+      </div>
 
       <div class="info-wrapper">
         <div class="card weather-container">
