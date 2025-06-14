@@ -3,50 +3,52 @@
   <head>
     <meta charset="UTF-8" />
     <title>실시간 환율 및 국가 정보 인터랙티브 대시보드 시스템</title>
-
-    <!-- style.css -->
     <link rel="stylesheet" href="style.css" />
-
-    <!-- Leaflet (지도) -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   </head>
   <body>
     <div class="container">
-      <h1>실시간 환율 및 국가 정보 인터랙티브 대시보드 시스템</h1>
+      <h1>실시간 환율 및 국가 정보 대시보드</h1>
 
-      <!-- 국가 선택 -->
       <div class="controls">
         <label for="countrySelect">국가 선택: </label>
         <select id="countrySelect"></select>
       </div>
 
-      <!-- 지도 -->
       <div id="map"></div>
-
-      <!-- 환율 추세 차트 -->
       <canvas id="rateChart"></canvas>
 
-      <!-- 날씨 & 국가정보 -->
       <div class="info-wrapper">
-        <div class="card">
-          <h2>현재 날씨</h2>
-          <p id="weatherInfo">로딩 중…</p>
+        <div class="card weather-container">
+          <div class="sub-card">
+            <h2>현재 시간</h2>
+            <p id="currentTime">로딩 중…</p>
+          </div>
+          <div class="sub-card">
+            <h2>현재 날씨</h2>
+            <p id="weatherInfo">로딩 중…</p>
+          </div>
         </div>
+
         <div class="card">
           <h2>국가 정보</h2>
-          <ul id="countryInfo">
-            <li>로딩 중…</li>
-          </ul>
+          <div class="country-card">
+            <img class="flag" id="countryFlag" src="" alt="국기" />
+            <h3 id="countryName">-</h3>
+            <ul id="countryInfo">
+              <li>로딩 중…</li>
+            </ul>
+          </div>
         </div>
       </div>
+
+      <p class="updated-at" id="updatedAt">업데이트: -</p>
     </div>
 
-    <!-- JS 라이브러리들 -->
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@2.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
-
-    <!-- 메인 로직 -->
     <script src="dashboard.js"></script>
+    <script src="https://raw.githubusercontent.com/johan/world.geo.json/master/countries.geo.json"></script>
   </body>
 </html>
